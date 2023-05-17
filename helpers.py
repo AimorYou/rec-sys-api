@@ -1,13 +1,11 @@
 import pandas as pd
 import numpy as np
-from lightfm.data import Dataset
-from lightfm import LightFM
 
 
 TRAIN_BODY_PART = ['height', 'weight', 'level',
                    'trainHands','trainLegs','trainBack',
                    'trainPress', 'trainChest', 'trainShoulders']
-AIM_HELTH = 'health'
+AIM_HEALTH = 'health'
 AIM_WEIGHT_LOSS = 'weight loss'
 AIM_MUSCLE_GROUP = 'muscle group'
 
@@ -17,7 +15,7 @@ items_df = pd.read_csv("items.csv")
 
 
 def prepare_data(df_req, items_df, aim):
-    if aim == AIM_HELTH:
+    if aim == AIM_HEALTH:
         items_df = (items_df[(items_df["body_part"] == "cardio") |
                              (items_df["name"].str.contains("stretch")) |
                              (items_df["body_part"] == "neck")])
@@ -83,15 +81,15 @@ def make_user_features_dct(row):
     if row['aim'] == AIM_WEIGHT_LOSS:
         features_dct[AIM_WEIGHT_LOSS] = 1
         features_dct[AIM_MUSCLE_GROUP] = 0
-        features_dct[AIM_HELTH] = 0
-    elif row['aim'] == AIM_HELTH:
+        features_dct[AIM_HEALTH] = 0
+    elif row['aim'] == AIM_HEALTH:
         features_dct[AIM_WEIGHT_LOSS] = 0
         features_dct[AIM_MUSCLE_GROUP] = 0
-        features_dct[AIM_HELTH] = 1
+        features_dct[AIM_HEALTH] = 1
     else:
         features_dct[AIM_WEIGHT_LOSS] = 0
         features_dct[AIM_MUSCLE_GROUP] = 1
-        features_dct[AIM_HELTH] = 0
+        features_dct[AIM_HEALTH] = 0
 
     for el in TRAIN_BODY_PART:
         features_dct[el] = row[el]

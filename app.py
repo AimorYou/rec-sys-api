@@ -1,9 +1,6 @@
 import pickle
-import pandas as pd
 from flask import Flask, request, jsonify
 from lightfm.data import Dataset
-from lightfm import LightFM
-
 from helpers import *
 
 
@@ -12,7 +9,7 @@ app = Flask(__name__)
 dataset = Dataset()
 lightfm_mapping = fill_dataset_create_mapper(dataset, interactions_df, users_df, items_df)
 train_mat, users_features, items_features = create_sparse_data(dataset, interactions_df, users_df, items_df)
-model_lightfm = pickle.load(open('light_fm.pickle', 'rb'))
+model_lightfm = pickle.load(open('light_fm.pkl', 'rb'))
 model_catboost = pickle.load(open('model_catboost_full.pkl', 'rb'))
 
 
@@ -39,14 +36,13 @@ def predict_catboost():
 @app.post('/lightfm')
 def predict_lightfm():
     req = request.get_json()
-    user_id = req.get("id")
 
+    user_id = req.get("id")
     if not user_id:
         return "id not found", 404
 
     rec_ids = predict_items_ids(model_lightfm, users_features, items_features, lightfm_mapping, user_id, top_n=6)
-
-    return rec_ids, 200
+    return list(map(int, rec_ids)), 200
 
 
 if __name__ == '__main__':
