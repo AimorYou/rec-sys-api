@@ -1,20 +1,21 @@
 import pickle
-from flask import Flask, request, jsonify
-from lightfm.data import Dataset
+from flask import Flask, request
+from lightfm_module import LightFMModule
 from helpers import *
 
 
 app = Flask(__name__)
 
-dataset = Dataset()
-lightfm_mapping = fill_dataset_create_mapper(dataset, interactions_df, users_df, items_df)
-train_mat, users_features, items_features = create_sparse_data(dataset, interactions_df, users_df, items_df)
-model_lightfm = pickle.load(open('light_fm.pkl', 'rb'))
+module_lightfm = LightFMModule('light_fm.pkl')
 model_catboost = pickle.load(open('model_catboost_full.pkl', 'rb'))
 
 
 @app.post('/catboost')
 def predict_catboost():
+    """
+    API метод для рекомендации упражнений с помощью модели Catboost
+    :return: list, содержащий id рекомендованных упражнений и код
+    """
     req = request.get_json()
     aim = req.get("aim")
 
@@ -35,14 +36,50 @@ def predict_catboost():
 
 @app.post('/lightfm')
 def predict_lightfm():
+    """
+    API метод для рекомендации упражнений с помощью модели LightFM
+    :return: list, содержащий id рекомендованных упражнений и код
+    """
     req = request.get_json()
-
     user_id = req.get("id")
     if not user_id:
         return "id not found", 404
 
-    rec_ids = predict_items_ids(model_lightfm, users_features, items_features, lightfm_mapping, user_id, top_n=6)
+    rec_ids = module_lightfm.predict_items_ids(user_id, top_n=6)
     return list(map(int, rec_ids)), 200
+
+
+@app.post('/lightfm_new_user_rec')
+def new_user_rec():
+    """
+    API метод для предсказания нового пользователя
+    :return:
+    """
+    js = request.get_json()
+    try:
+        rec_ids = module_lightfm.predict_for_new_user(js)
+        return rec_ids, 200
+    except Exception as e:
+        return str(e), 500
+
+
+@app.post('/add_user')
+def add_new_user():
+    req = request.get_json()
+    try:
+        module_lightfm.add_user(req)
+        return 'OK!', 200
+    except Exception as e:
+        return str(e) + '. Send all users features', 500
+
+
+@app.post('/update_lightfm_model')
+def update_data():
+    try:
+        module_lightfm.update_data()
+        return 'OK!', 200
+    except Exception as e:
+        return str(e), 500
 
 
 if __name__ == '__main__':
