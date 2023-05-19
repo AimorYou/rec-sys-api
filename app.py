@@ -53,7 +53,7 @@ def predict_lightfm():
 def new_user_rec():
     """
     API метод для предсказания нового пользователя
-    :return:
+    :return:Сообщение и код
     """
     js = request.get_json()
     try:
@@ -65,6 +65,10 @@ def new_user_rec():
 
 @app.post('/add_user')
 def add_new_user():
+    """
+    API метод для добавления нового пользователя.
+    :return: Сообщение и код
+    """
     req = request.get_json()
     try:
         module_lightfm.add_user(req)
@@ -75,8 +79,12 @@ def add_new_user():
 
 @app.post('/update_lightfm_model')
 def update_data():
+    """
+    API метод для обновления данных и модели.
+    :return: Сообщение и код
+    """
     try:
-        module_lightfm.update_data()
+        module_lightfm.update_data(num_epochs=15)
         return 'OK!', 200
     except Exception as e:
         return str(e), 500

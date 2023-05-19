@@ -15,6 +15,10 @@ from helpers import get_user_item_features, \
 class LightFMModule:
 
     def __init__(self, lightfm_path='lightfm.pkl'):
+        """
+        Метод инициализации.
+        :param lightfm_path: Путь к файлу с моделью
+        """
         self.lightfm_path = lightfm_path
 
         self.dataset = Dataset()
@@ -99,6 +103,12 @@ class LightFMModule:
         return list(map(self.lightfm_mapping['items_inv_mapping'].get, top_cols))
 
     def predict_for_new_user(self, js, top_n=6):
+        """
+        Метод для рекомендации упражнений для нового пользователя.
+        :param js: json объект с данными о пользователе
+        :param top_n: количество рекомендаций
+        :return: list объект, содержащий id рекомендованных упражнений
+        """
         user_features = list(make_user_features_dct(pd.Series(js)).values())
         user_features_arr = np.zeros(len(user_features))
         for i in range(len(user_features)):
@@ -113,19 +123,27 @@ class LightFMModule:
         return list(map(self.lightfm_mapping['items_inv_mapping'].get, top_cols))
 
     def add_user(self, js):
+        """
+        Метод для добавления нового пользователя.
+        :param js: son объект с данными о пользователе
+        :return: None
+        """
         row = pd.Series(js)
         row['features'] = make_user_features_dct(row)
         self.users_df.loc[len(self.users_df.index)] = row
-        #self.users_df.iloc[:, :-1].to_csv('users.csv', index=False)
+        self.users_df.iloc[:, :-1].to_csv('users.csv', index=False)
 
     def train(self, num_epochs=15):
+        """
+        Метод для обучения модели.
+        :param num_epochs: Количество эпох обучения
+        :return: None
+        """
         self.model_lightfm = LightFM(no_components=16,
                                      learning_rate=0.025,
                                      loss='logistic',
                                      max_sampled=5,
                                      random_state=23)
-        with open(self.lightfm_path, 'wb') as fin:
-            pickle.dump(self.model_lightfm, fin, protocol=pickle.HIGHEST_PROTOCOL)
 
         for _ in range(num_epochs):
             self.model_lightfm.fit(
@@ -135,13 +153,26 @@ class LightFMModule:
                 item_features=self.items_features,
             )
 
+        with open(self.lightfm_path, 'wb') as fin:
+            pickle.dump(self.model_lightfm, fin, protocol=pickle.HIGHEST_PROTOCOL)
+
     def train_lightfm_model(self, num_epochs=15):
+        """
+        Метод, который запускает поток обучения модели
+        :param num_epochs: Количество эпох обучения
+        :return: None
+        """
         new_thread = Thread(target=self.train,
                             args=(num_epochs,))
         new_thread.start()
 
-    def update_data(self):
+    def update_data(self, num_epochs=15):
+        """
+        Метод для обновления данных о пользователях и модели.
+        :param num_epochs: Количество эпох обучения.
+        :return: None
+        """
         self.dataset = Dataset()
         self.lightfm_mapping = self.fill_dataset_create_mapper()
         self.interactions_mat, self.weights_mat, self.users_features, self.items_features = self.create_sparse_data()
-        self.train_lightfm_model(num_epochs=1)
+        self.train_lightfm_model(num_epochs)
