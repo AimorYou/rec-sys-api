@@ -125,13 +125,23 @@ class LightFMModule:
     def add_user(self, js):
         """
         Метод для добавления нового пользователя.
-        :param js: son объект с данными о пользователе
+        :param js: json объект с данными о пользователе
         :return: None
         """
         row = pd.Series(js)
         row['features'] = make_user_features_dct(row)
         self.users_df.loc[len(self.users_df.index)] = row
         self.users_df.iloc[:, :-1].to_csv('users.csv', index=False)
+
+    def add_interactions(self, js):
+        """
+        Метод для добавления нового взаимодействия.
+        :param js: json объект с данными о взаимодействии
+        :return: None
+        """
+        row = pd.Series(js)
+        self.interactions_df.loc[len(self.interactions_df.index)] = row
+        self.interactions_df.to_csv('interactions.csv', index=False)
 
     def train(self, num_epochs=15):
         """

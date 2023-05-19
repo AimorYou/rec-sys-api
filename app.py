@@ -8,6 +8,9 @@ app = Flask(__name__)
 
 module_lightfm = LightFMModule('light_fm.pkl')
 model_catboost = pickle.load(open('model_catboost_full.pkl', 'rb'))
+items_df = module_lightfm.items_df
+users_df = module_lightfm.users_df
+interactions_df = module_lightfm.interactions_df
 
 
 @app.post('/catboost')
@@ -25,7 +28,7 @@ def predict_catboost():
     df_req = pd.DataFrame(data=req, index=[0])
     final_df = prepare_data(df_req, items_df, aim)
 
-    final_df["predict"] = model_catboost.predict_proba(final_df.drop(columns="id_y"))[:, 2]
+    final_df["predict"] = model_catboost.predict_proba(final_df.drop(columns=["id_y", "features"]))[:, 2]
     if aim == "muscle group":
         rec_ids = predict_muscle_group(df_req, final_df)
     else:
@@ -72,6 +75,20 @@ def add_new_user():
     req = request.get_json()
     try:
         module_lightfm.add_user(req)
+        return 'OK!', 200
+    except Exception as e:
+        return str(e) + '. Send all users features', 500
+
+
+@app.post('/add_interaction')
+def add_interaction():
+    """
+    API метод для добавления взаимодействия
+    :return: Сообщение и код
+    """
+    js = request.get_json()
+    try:
+        module_lightfm.add_interactions(js)
         return 'OK!', 200
     except Exception as e:
         return str(e) + '. Send all users features', 500

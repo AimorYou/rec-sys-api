@@ -15,7 +15,7 @@ items_df = pd.read_csv("items.csv")
 
 
 def prepare_data(df_req, items_df, aim):
-    if aim == AIM_HEALTH:
+    if aim == "health":
         items_df = (items_df[(items_df["body_part"] == "cardio") |
                              (items_df["name"].str.contains("stretch")) |
                              (items_df["body_part"] == "neck")])
