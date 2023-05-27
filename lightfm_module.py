@@ -13,18 +13,17 @@ from helpers import get_user_item_features, \
 
 
 class LightFMModule:
-
     def __init__(self, lightfm_path='lightfm.pkl'):
         """
         Метод инициализации.
-        :param lightfm_path: Путь к файлу с моделью
+        :param lightfm_path: Путь к файлу с моделью LightFM
         """
         self.lightfm_path = lightfm_path
 
         self.dataset = Dataset()
-        self.interactions_df = pd.read_csv("interactions.csv")
-        self.users_df = pd.read_csv("users.csv")
-        self.items_df = pd.read_csv("items.csv")
+        self.interactions_df = pd.read_csv("data/interactions.csv")
+        self.users_df = pd.read_csv("data/users.csv")
+        self.items_df = pd.read_csv("data/items.csv")
 
         self.lightfm_mapping = self.fill_dataset_create_mapper()
         self.interactions_mat, self.weights_mat, self.users_features, self.items_features = self.create_sparse_data()

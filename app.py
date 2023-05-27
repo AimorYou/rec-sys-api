@@ -1,16 +1,14 @@
-import pickle
 from flask import Flask, request
+
 from lightfm_module import LightFMModule
+from catboost_module import CatBoostModule
 from helpers import *
 
 
 app = Flask(__name__)
 
-module_lightfm = LightFMModule('light_fm.pkl')
-model_catboost = pickle.load(open('model_catboost_full.pkl', 'rb'))
-items_df = module_lightfm.items_df
-users_df = module_lightfm.users_df
-interactions_df = module_lightfm.interactions_df
+module_lightfm = LightFMModule('models/model_lightfm.pkl')
+module_catboost = CatBoostModule('models/model_catboost.pkl')
 
 
 @app.post('/catboost')
@@ -21,18 +19,25 @@ def predict_catboost():
     """
     req = request.get_json()
     aim = req.get("aim")
-
-    if not aim:
-        return "aim not found", 404
-
+    sex = req.get("sex")
+    weight = req.get("weight")
     df_req = pd.DataFrame(data=req, index=[0])
-    final_df = prepare_data(df_req, items_df, aim)
 
-    final_df["predict"] = model_catboost.predict_proba(final_df.drop(columns=["id_y", "features"]))[:, 2]
-    if aim == "muscle group":
-        rec_ids = predict_muscle_group(df_req, final_df)
-    else:
-        rec_ids = final_df.sort_values(by="predict", ascending=False)[["id_y"]].head(6).values.reshape(6, ).tolist()
+    try:
+        final_df = module_catboost.prepare_data(df_req, aim, sex, weight)
+
+    except Exception as e:
+        return f"something went wrong in data preparation: {e}", 400
+
+    try:
+        ranked_df = module_catboost.ranking(final_df)
+    except Exception as e:
+        return f"something went wrong in ranking: {e}", 400
+
+    try:
+        rec_ids = module_catboost.re_ranking(df_req, ranked_df, aim)
+    except Exception as e:
+        return f"something went wrong in re-ranking: {e}", 400
 
     return rec_ids, 200
 
